@@ -16,11 +16,14 @@ def main():
     print("ID:", 328601018)
 
     # Read images
-    i = 0
-    L = cv2.imread(os.path.join('input', 'pair%d-L.png' % i), 0) / 255.0
-    R = cv2.imread(os.path.join('input', 'pair%d-R.png' % i), 0) / 255.0
+    # i = 2
+    # L = cv2.imread(os.path.join('input', 'pair%d-L.png' % i), 0) / 255.0
+    # R = cv2.imread(os.path.join('input', 'pair%d-R.png' % i), 0) / 255.0
 
+    # L=cv2.imread('input/pair1-L.png',0)/255.0
+    # R=cv2.imread('input/pair1-R.png',0)/255.0
     # Display depth SSD
+
     # displayDepthImage(L, R, (0, 4), method=disparitySSD)
 
     # Display depth NC
@@ -38,10 +41,10 @@ def main():
 
     print(h, error)
     #
-    # dst = cv2.imread(os.path.join('input', 'billBoard.jpg'))[:, :, [2, 1, 0]] / 255.0
-    # src = cv2.imread(os.path.join('input', 'car.jpg'))[:, :, [2, 1, 0]] / 255.0
-    #
-    # warpImag(src, dst)
+    dst = cv2.imread(os.path.join('input', 'billBoard.jpg'))[:, :, [2, 1, 0]] / 255.0
+    src = cv2.imread(os.path.join('input', 'car.jpg'))[:, :, [2, 1, 0]] / 255.0
+
+    warpImag(src, dst)
 
 
 if __name__ == '__main__':
