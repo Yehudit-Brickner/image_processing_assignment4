@@ -13,7 +13,6 @@ def disparitySSD(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int, int), k
     return: Disparity map, disp_map.shape = Left.shape
     """
 
-
     # create a blank image
     new = np.zeros((img_l.shape[0], img_l.shape[1]))
     # go over all the value in the left image
@@ -41,16 +40,15 @@ def disparitySSD(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int, int), k
             for offset in range(disp_range[0], disp_range[1]):
                 ssd = 0
 
-                for v in range(-k_size, k_size+1):
-                    for u in range(-k_size, k_size+1):
-                        if 0<=r+v-offset<img_r.shape[0] and 0<=c+u-offset<img_r.shape[1] :
-                            ssd += ((img_l[r,c]) - (img_r[r + v-offset,c + u - offset]))**2
-
+                for v in range(-k_size, k_size + 1):
+                    for u in range(-k_size, k_size + 1):
+                        if 0 <= r + v - offset < img_r.shape[0] and 0 <= c + u - offset < img_r.shape[1]:
+                            ssd += ((img_l[r, c]) - (img_r[r + v - offset, c + u - offset])) ** 2
 
                 if ssd < prev_ssd:
                     prev_ssd = ssd
                     best_offset = offset
-            new[r][c]=best_offset
+            new[r][c] = best_offset
     print(new)
 
     return new
@@ -138,6 +136,23 @@ def computeHomography(src_pnt: np.ndarray, dst_pnt: np.ndarray) -> (np.ndarray, 
     error = np.sqrt((np.sum(ddd) ** 2))
 
     return hom, error
+
+
+def getEquation(p1, p2):
+    top = p1[1] - p2[1]  # y1-y2
+    bottom = p1[0] - p2[0]  # x1-x2
+    if bottom != 0:
+        slope = top / bottom
+        # y-y1=slope(x-x1)
+        # y= slopex -slopex1+y1
+        # y=1
+        # m=slope
+        b = -slope * p1[0] + p1[1]
+        print("y=", slope, "x ", b)
+        return slope, b
+    else:
+        print("line is parallel to y")
+        return 0, 0
 
 
 def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
@@ -230,34 +245,80 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
     src_p[br, :] = tr_src
     src_p[bl, :] = tl_src
 
-    # make the mask of the image
-    mask = np.zeros((dst_img.shape[0], dst_img.shape[1], 3))
-    for j in range(dst_img.shape[0]):
-        for i in range(dst_img.shape[1]):
-            if i > dst_p[tl][0] and i > dst_p[bl][0] and i < dst_p[br][0] and i < dst_p[tr][0] \
-                    and j > dst_p[tl][1] and j > dst_p[tr][1] and j < dst_p[br][1] and j < dst_p[bl][1]:
-                mask[j][i][0] = 1
-                mask[j][i][1] = 1
-                mask[j][i][2] = 1
+    # to make the mask we need to map out the shape that we stabbed
+    # we will make 4 equations: TL-TR, BL-BR, TL-BL ,TR-BR
+    # using these equation we will check per pixel if it is part of the mask or not
+    mask1 = np.zeros((dst_img.shape[0], dst_img.shape[1], 3))
+    maxX = max([dst_p[br][0], dst_p[tr][0]])
+    minX = min([dst_p[bl][0], dst_p[tl][0]])
+    maxY = max([dst_p[br][1], dst_p[bl][1]])
+    minY = min([dst_p[tr][1], dst_p[tl][1]])
+    TL_TR_slope, TL_TR_b = getEquation((dst_p[tl][0], dst_p[tl][1]), (dst_p[tr][0], dst_p[tr][1]))
+    BL_BR_slope, BL_BR_b = getEquation((dst_p[bl][0], dst_p[bl][1]), (dst_p[br][0], dst_p[br][1]))
+    TL_BL_slope, TL_BL_b = getEquation((dst_p[tl][0], dst_p[tl][1]), (dst_p[bl][0], dst_p[bl][1]))
+    TR_BR_slope, TR_BR_b = getEquation((dst_p[br][0], dst_p[br][1]), (dst_p[tr][0], dst_p[tr][1]))
+
+
+
+    for x in range(dst_img.shape[0]): # go over rows of image
+        for y in range(dst_img.shape[1]):
+            if minX <= y <= maxX and minY <= x <= maxY:  # (opposite because of how plt plots)
+                if TL_TR_slope * y + TL_TR_b <= x <= BL_BR_slope * y + BL_BR_b:  # check if the x is in the okay range (opposite because of how plt plots- should be checking the col)
+                    if TL_BL_slope != 0 and TR_BR_slope != 0:  # make sure the left and right arent parallel to the y axis
+                        if (y - TL_BL_b) / TL_BL_slope <= x <= (y - TR_BR_b) / TR_BR_slope:  # check if the y is in the okay range (opposite because of how plt plots- should be checking the row)
+                            mask1[x][y][0] = 1
+                            mask1[x][y][1] = 1
+                            mask1[x][y][2] = 1
+                    elif TL_BL_slope != 0 and TR_BR_slope == 0:  # if right is parallel to the y axis
+                        if x <= dst_p[br][1] and (y - TL_BL_b) / TL_BL_slope <=x:
+                            mask1[x][y][0] = 1
+                            mask1[x][y][1] = 1
+                            mask1[x][y][2] = 1
+                    elif TL_BL_slope == 0 and TR_BR_slope != 0:  # if left is parallel to the y axis
+                        if (y - TR_BR_b) / TR_BR_slope >= x and x >= dst_p[tl][0] :
+                            mask1[x][y][0] = 1
+                            mask1[x][y][1] = 1
+                            mask1[x][y][2] = 1
+                    else:  # both are parallel to y axis
+                        if dst_p[tl][0] <= x <= dst_p[tr][0]:
+                            mask1[x][y][0] = 1
+                            mask1[x][y][1] = 1
+                            mask1[x][y][2] = 1
+
+    # plt.imshow(mask1)
+    # plt.show()
+
+    # # make the mask of the image
+    # mask = np.zeros((dst_img.shape[0], dst_img.shape[1], 3))
+    # for j in range(dst_img.shape[0]):
+    #     for i in range(dst_img.shape[1]):
+    #         if i > dst_p[tl][0] and i > dst_p[bl][0] and i < dst_p[br][0] and i < dst_p[tr][0] \
+    #                 and j > dst_p[tl][1] and j > dst_p[tr][1] and j < dst_p[br][1] and j < dst_p[bl][1]:
+    #             mask[j][i][0] = 1
+    #             mask[j][i][1] = 1
+    #             mask[j][i][2] = 1
     # plt.imshow(mask)
     # plt.show()
 
     # get the homgraphy of teh images
     hom, e = computeHomography(src_p, dst_p)
-    theta= 1.5708
-    turn=np.array([[np.cos(theta), -np.sin(theta),dst_img.shape[0]*3//4],
-             [np.sin(theta), np.cos(theta), 0],
-             [0,0,1]],dtype=np.float)
-    hom=hom@turn
-    print(hom)
+    theta = 1.5708
+    turn = np.array([[np.cos(theta), -np.sin(theta), (dst_img.shape[0] * 3 // 4)],
+                     [np.sin(theta), np.cos(theta), 0],
+                     [0, 0, 1]], dtype=np.float)
+    hom = hom @ turn
+    # print(hom)
     # hom1 , e1= cv2.findHomography(src_p.astype(float), dst_p.astype(float))
     # print(hom1)
     # warp the image
-    src_out = cv2.warpPerspective(src_img, hom, (dst_img.shape[1], dst_img.shape[0]))
-    plt.imshow(src_out)
-    plt.show()
 
+    src_out = cv2.warpPerspective(src_img, hom, (dst_img.shape[1], dst_img.shape[0]))
+
+    # plt.imshow(src_out)
+    # plt.show()
+    # plt.imshow(mask1 -src_out)
+    # plt.show()
     # connect the images
-    out = dst_img * (1 - mask) + src_out * (mask)
+    out = dst_img * (1 - mask1) + src_out * (mask1)
     plt.imshow(out)
     plt.show()
