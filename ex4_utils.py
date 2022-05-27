@@ -225,10 +225,10 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
     bl_src = np.array([src_img.shape[0], 0])
     # create the src_p array so that the corners match
     src_p = np.zeros((4, 2))
-    src_p[tl, :] = tl_src
-    src_p[tr, :] = tr_src
-    src_p[br, :] = br_src
-    src_p[bl, :] = bl_src
+    src_p[tl, :] = bl_src
+    src_p[tr, :] = br_src
+    src_p[br, :] = tr_src
+    src_p[bl, :] = tl_src
 
     # make the mask of the image
     mask = np.zeros((dst_img.shape[0], dst_img.shape[1], 3))
@@ -244,13 +244,18 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
 
     # get the homgraphy of teh images
     hom, e = computeHomography(src_p, dst_p)
+    theta= 1.5708
+    turn=np.array([[np.cos(theta), -np.sin(theta),dst_img.shape[0]*3//4],
+             [np.sin(theta), np.cos(theta), 0],
+             [0,0,1]],dtype=np.float)
+    hom=hom@turn
     print(hom)
     # hom1 , e1= cv2.findHomography(src_p.astype(float), dst_p.astype(float))
     # print(hom1)
     # warp the image
     src_out = cv2.warpPerspective(src_img, hom, (dst_img.shape[1], dst_img.shape[0]))
-    # plt.imshow(src_out)
-    # plt.show()
+    plt.imshow(src_out)
+    plt.show()
 
     # connect the images
     out = dst_img * (1 - mask) + src_out * (mask)
