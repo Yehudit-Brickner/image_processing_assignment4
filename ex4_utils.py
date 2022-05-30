@@ -264,7 +264,7 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
     minX = min([dst_p[bl][0], dst_p[tl][0]])
     maxY = max([dst_p[br][1], dst_p[bl][1]])
     minY = min([dst_p[tr][1], dst_p[tl][1]])
-    print(maxX, maxY, minX, minY)
+   
     TL_TR_slope, TL_TR_b = getEquation((dst_p[tl][0], dst_p[tl][1]), (dst_p[tr][0], dst_p[tr][1]))
     BL_BR_slope, BL_BR_b = getEquation((dst_p[bl][0], dst_p[bl][1]), (dst_p[br][0], dst_p[br][1]))
     TL_BL_slope, TL_BL_b = getEquation((dst_p[tl][0], dst_p[tl][1]), (dst_p[bl][0], dst_p[bl][1]))
