@@ -4,7 +4,9 @@ import cv2
 import time
 
 
+
 def displayDepthImage(l_img, r_img, disparity_range=(0, 5), method=disparitySSD):
+
     p_size = 5
     st = time.time()
     d_ssd = method(l_img, r_img, disparity_range, p_size)
@@ -20,17 +22,17 @@ def main():
     print("ID:", 328601018)
 
     # Read images
-    i =1
+    i =0
     L = cv2.imread(os.path.join('input', 'pair%d-L.png' % i), 0) / 255.0
     R = cv2.imread(os.path.join('input', 'pair%d-R.png' % i), 0) / 255.0
 
     # L=cv2.imread('input/pair1-L.png',0)/255.0
     # R=cv2.imread('input/pair1-R.png',0)/255.0
     # # Display depth SSD
-    # displayDepthImage(L, R, (10,80), method=disparitySSD)
+    # displayDepthImage(L, R, (0,4), method=disparitySSD)
 
     # Display depth NC
-    displayDepthImage(L, R, (10,80), method=disparityNC)
+    displayDepthImage(L, R, (10,81), method=disparityNC)
 
     # src = np.array([[279, 552],
     #                 [372, 559],

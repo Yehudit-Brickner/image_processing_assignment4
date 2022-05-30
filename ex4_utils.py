@@ -19,26 +19,11 @@ def disparitySSD(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int, int), k
 
     # create a blank image
     new = np.zeros((img_l.shape[0], img_l.shape[1]))
-    #
+    #make a padded image
     img_l_pad=cv2.copyMakeBorder(img_l,k_size+disp_range[1],k_size+disp_range[1],k_size+disp_range[1],k_size+disp_range[1],cv2.BORDER_REFLECT_101)
     img_r_pad=cv2.copyMakeBorder(img_r,k_size+disp_range[1],k_size+disp_range[1],k_size+disp_range[1],k_size+disp_range[1],cv2.BORDER_REFLECT_101)
 
-   # # go over the image
-   #  for r in range(img_l.shape[0]):
-   #      for c in range(img_l.shape[1]):
-   #          best_offset = -1
-   #          prev_ssd = float("inf")
-   #          # go over the offset
-   #          for offset in range(disp_range[0], disp_range[1]):
-   #              ssd = 0
-   #              if r-k_size>=0 and r+k_size+1<img_l.shape[0] and c-k_size>=0 and c+k_size+1<img_l.shape[1]: # check that we are in range in the left image
-   #                  if r-k_size>=0 and r+k_size+1<img_r.shape[0] and c-k_size-offset>=0 and c+k_size-offset+1<img_r.shape[1]: # check that we are in range in the right image
-   #                      ssd = np.sum((img_l[r-k_size:r+k_size+1,c-k_size:c+k_size+1]-img_r[r-k_size:r+k_size+1,c-k_size-offset:c+k_size-offset+1])**2)
-   #              # check if smaller then prev
-   #              if ssd < prev_ssd:
-   #                  prev_ssd = ssd
-   #                  best_offset = offset
-   #          new[r][c] = best_offset #put in the value in the new image
+
     # go over the image
     for r in range(img_l.shape[0]):
         for c in range(img_l.shape[1]):
@@ -63,7 +48,7 @@ def disparitySSD(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int, int), k
             # if c+1<=img_l.shape[1]:
             #     new[r ][c+1] = best_offset
             # if r+1 <img_l.shape[0] and c+1 <img_l.shape[1]:
-            #     new[r+1][c + 1] = best_offset322
+            #     new[r+1][c + 1] = best_offset
     return new
 
 
@@ -76,77 +61,41 @@ def disparityNC(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int,int), k_s
 
     return: Disparity map, disp_map.shape = Left.shape
     """
-    # diff= img_l-img_r
-    # plt.imshow(diff)
-    # plt.show()
-    # create a blank image
+
     new = np.zeros((img_l.shape[0], img_l.shape[1]))
-    # go over all the value in the left image
-    # for r in range(img_l.shape[0]):
-    #     for c in range(img_l.shape[1]):
-    #         # go over the "window" around r,c
-    #         top = 0
-    #         bottom1 = 0
-    #         bottom2 = 0
-    #         for i in range(k_size * 2 + 1):
-    #             for j in range(k_size * 2 + 1):
-    #                 # check if the values are in the other image
-    #                 if 0 <= (r + i - disp_range[0] // 2) < img_r.shape[0] and 0 <= (c + j - disp_range[1] // 2) < \
-    #                         img_r.shape[1]:
-    #                     # add to top this number from the equation
-    #                     top += (img_l[r][c] * img_r[r + i - disp_range[0] // 2][c + j - disp_range[1] // 2]) ** 2
-    #                     bottom1 += (img_r[r][c] * img_r[r + i - disp_range[0] // 2][c + j - disp_range[1] // 2]) ** 2
-    #                     bottom2 += (img_l[r][c] * img_l[r + i - disp_range[0] // 2][c + j - disp_range[1] // 2]) ** 2
-    #                 # if 0 <= (disp_range[0]//2+i-disp_range[0]//2) < img_l.shape[0] and 0 <= (disp_range[1]//2+j-disp_range[1]//2) < img_l.shape[1] :
-    #                 #     # and 0 <= disp_range[0] // 2 < img_l.shape[0] and 0 <= disp_range[1] // 2 < img_l.shape[1]
-    #                 #     bottom2 += (img_l[disp_range[0] // 2][disp_range[1] // 2] *img_l[disp_range[0] // 2 + i - disp_range[0] // 2][disp_range[1] // 2 + j - disp_range[1] // 2]) ** 2
-    #                 # if 0 <= (r + i - (k_size * 2 + 1) // 2) < img_r.shape[0] and 0 <= (c + j - (k_size * 2 + 1) // 2) < img_r.shape[1]:
-    #                 #     # add to top this number from the equation
-    #                 #     top += (img_l[r][c] * img_r[r + i - (k_size * 2 + 1)// 2][c + j - (k_size * 2 + 1) // 2]) ** 2
-    #                 #     bottom1 += (img_r[r][c] * img_r[r + i - (k_size * 2 + 1) // 2][c + j - (k_size * 2 + 1)// 2]) ** 2
-    #                 #     bottom2 += (img_l[r][c] * img_l[r+ i -(k_size * 2 + 1) // 2][c+ j -(k_size * 2 + 1) // 2]) ** 2
-    #         # put the sum into the new image
-    #         if (bottom1 * bottom2) != 0:
-    #             new[r][c] = top / np.sqrt(bottom1 * bottom2)
-    #         else:
-    #             new[r][c] = top
-    # kernel=k_size*2+1
-    for r in range(k_size,img_l.shape[0]-k_size):
+
+    img_l_pad = cv2.copyMakeBorder(img_l, k_size + disp_range[1], k_size + disp_range[1], k_size + disp_range[1],k_size + disp_range[1], cv2.BORDER_REFLECT_101)
+    img_r_pad = cv2.copyMakeBorder(img_r, k_size + disp_range[1], k_size + disp_range[1], k_size + disp_range[1],k_size + disp_range[1], cv2.BORDER_REFLECT_101)
+    for r in range(img_l.shape[0]):
         print(r)
-        for c in range(k_size,img_l.shape[1]-k_size):
+        for c in range(img_l.shape[1]):
+            r1 = r + k_size + disp_range[1]
+            c1 = c + k_size + disp_range[1]
             best_offset = 0
             prev_ssd = float("inf")
-            for offset in range(disp_range[0], disp_range[1]):
+            for offset in range(disp_range[0], disp_range[1],2):
                 ssd = 0
-                # top = 0
-                # bottom1=0
-                # bottom2=0
-                if r - k_size >= 0 and r + k_size < img_l.shape[0] and c - k_size >= 0 and c + k_size < img_l.shape[1]:
-                    if r - k_size >= 0 and r + k_size < img_r.shape[0] and c - k_size - offset >= 0 and c + k_size - offset < img_r.shape[1]:
-                        top = np.sum((img_l[r - k_size:r + k_size + 1, c - k_size:c + k_size + 1] - img_r[r - k_size:r + k_size + 1,c - k_size - offset:c + k_size - offset + 1]) ** 2)
-                        bottom1 = np.sum((img_l[r - k_size:r + k_size + 1, c - k_size:c + k_size + 1] - img_l[r - k_size:r + k_size + 1,c - k_size - offset:c + k_size - offset + 1]) ** 2)
-                        bottom2 = np.sum((img_r[r - k_size:r + k_size + 1, c - k_size:c + k_size + 1] - img_r[r - k_size:r + k_size + 1,c - k_size - offset:c + k_size - offset + 1]) ** 2)
+                if r1 - k_size >= 0 and r1 + k_size < img_l_pad.shape[0] and c1 - k_size >= 0 and c1 + k_size < img_l_pad.shape[1]:
+                    if r1 - k_size >= 0 and r1 + k_size < img_r_pad.shape[0] and c1 - k_size - offset >= 0 and c1 + k_size - offset < img_r_pad.shape[1]:
+                        top = np.sum((img_l_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size:c1 + k_size + 1] - img_r_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size - offset:c1 + k_size - offset + 1]) ** 2)
+                        bottom1 = np.sum((img_l_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size:c1 + k_size + 1] - img_l_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size - offset:c1 + k_size - offset + 1]) ** 2)
+                        bottom2 = np.sum((img_r_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size:c1 + k_size + 1] - img_r_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size - offset:c1 + k_size - offset + 1]) ** 2)
                         if bottom1*bottom2!=0:
                             ssd=top/bottom1*bottom2
                         else:
                             ssd=top
-                # run over kersize
-                # for v in range(kernel):
-                #     for u in range(kernel):
-                #         if 0 <= r + v - offset < img_r.shape[0] and 0 <= c + u - offset < img_r.shape[1]:
-                #             top += ((img_l[r, c]) * (img_r[r + v - offset, c + u - offset])) ** 2
-                #             bottom1 += ((img_r[r, c]) * (img_r[r + v - offset, c + u - offset])) ** 2
-                #             bottom2 += ((img_l[u, v]) * (img_l[offset, offset])) ** 2
-                #             if bottom1*bottom2!=0:
-                #                 ssd=top/np.sqrt(bottom1*bottom2)
-                            # else:
-                            #     ssd=top
 
                 if ssd < prev_ssd:
                     prev_ssd = ssd
                     best_offset = offset
             new[r][c] = best_offset
-    print(new)
+            # if (r+1 < img_l.shape[0]):
+            #     new[r+1][c] = best_offset
+            # if c+1<=img_l.shape[1]:
+            #     new[r ][c+1] = best_offset
+            # if r+1 <img_l.shape[0] and c+1 <img_l.shape[1]:
+            #     new[r+1][c + 1] = best_offset
+    # print(new)
 
     return new
 
@@ -242,8 +191,6 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
 
     ##### Your Code Here ######
 
-    # make the dst points be ints
-    # dst_p=dst_p.astype(int)
 
     # find 2 smallest x take x with smallest y = top left corner
     # other is bottem left
