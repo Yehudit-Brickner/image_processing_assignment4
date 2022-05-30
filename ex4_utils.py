@@ -15,6 +15,12 @@ def disparitySSD(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int, int), k
 
     # create a blank image
     new = np.zeros((img_l.shape[0], img_l.shape[1]))
+    # get a gaussian kernel 5x1
+    # k = cv2.getGaussianKernel(5, -1)
+    # make it a square 5x5
+    # ker = k.dot(k.T)
+    # img_l=cv2.filter2D(img_l, -1, ker, borderType=cv2.BORDER_REPLICATE)
+    # img_r=cv2.filter2D(img_r, -1, ker, borderType=cv2.BORDER_REFLECT_101)
     # go over all the value in the left image
     # for r in range(img_l.shape[0]):
     #     for c in range(img_l.shape[1]):
@@ -33,28 +39,31 @@ def disparitySSD(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int, int), k
     # offset_adjust = 255 / disp_range[1]
     # for r in range(k_size, img_l.shape[0]-k_size):
     #     for c in range(k_size, img_l.shape[1]-k_size):
+    kernel=k_size*2+1
     for r in range(img_l.shape[0]):
         for c in range(img_l.shape[1]):
-            best_offset = 0
+            best_offset = -1
             prev_ssd = float("inf")
             for offset in range(disp_range[0], disp_range[1]):
                 ssd = 0
-
-                for v in range(-k_size, k_size + 1):
-                    for u in range(-k_size, k_size + 1):
-                        if 0 <= r + v - offset < img_r.shape[0] and 0 <= c + u - offset < img_r.shape[1]:
-                            ssd += ((img_l[r, c]) - (img_r[r + v - offset, c + u - offset])) ** 2
-
+                # run over kersize
+                # for v in range(kernel):
+                #     for u in range(kernel):
+                        # if 0 <= r + v - offset < img_r.shape[0] and 0 <= c + u - offset < img_r.shape[1]:
+                            # ssd += ((img_l[r, c]) - (img_r[r + v - offset, c + u - offset])) ** 2
+                if r-k_size>=0 and r+k_size<img_l.shape[0] and c-k_size>=0 and c+k_size<img_l.shape[1]:
+                    if r-k_size>=0 and r+k_size<img_r.shape[0] and c-k_size-offset>=0 and c+k_size-offset<img_r.shape[1]:
+                        ssd += np.sum((img_l[r-k_size:r+k_size+1,c-k_size:c+k_size+1]-img_r[r-k_size:r+k_size+1,c-k_size-offset:c+k_size-offset+1])**2)
                 if ssd < prev_ssd:
                     prev_ssd = ssd
                     best_offset = offset
             new[r][c] = best_offset
-    print(new)
+    # print(new)
 
     return new
 
 
-def disparityNC(img_l: np.ndarray, img_r: np.ndarray, disp_range: int, k_size: int) -> np.ndarray:
+def disparityNC(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int,int), k_size: int) -> np.ndarray:
     """
     img_l: Left image
     img_r: Right image
@@ -67,34 +76,61 @@ def disparityNC(img_l: np.ndarray, img_r: np.ndarray, disp_range: int, k_size: i
     # create a blank image
     new = np.zeros((img_l.shape[0], img_l.shape[1]))
     # go over all the value in the left image
+    # for r in range(img_l.shape[0]):
+    #     for c in range(img_l.shape[1]):
+    #         # go over the "window" around r,c
+    #         top = 0
+    #         bottom1 = 0
+    #         bottom2 = 0
+    #         for i in range(k_size * 2 + 1):
+    #             for j in range(k_size * 2 + 1):
+    #                 # check if the values are in the other image
+    #                 if 0 <= (r + i - disp_range[0] // 2) < img_r.shape[0] and 0 <= (c + j - disp_range[1] // 2) < \
+    #                         img_r.shape[1]:
+    #                     # add to top this number from the equation
+    #                     top += (img_l[r][c] * img_r[r + i - disp_range[0] // 2][c + j - disp_range[1] // 2]) ** 2
+    #                     bottom1 += (img_r[r][c] * img_r[r + i - disp_range[0] // 2][c + j - disp_range[1] // 2]) ** 2
+    #                     bottom2 += (img_l[r][c] * img_l[r + i - disp_range[0] // 2][c + j - disp_range[1] // 2]) ** 2
+    #                 # if 0 <= (disp_range[0]//2+i-disp_range[0]//2) < img_l.shape[0] and 0 <= (disp_range[1]//2+j-disp_range[1]//2) < img_l.shape[1] :
+    #                 #     # and 0 <= disp_range[0] // 2 < img_l.shape[0] and 0 <= disp_range[1] // 2 < img_l.shape[1]
+    #                 #     bottom2 += (img_l[disp_range[0] // 2][disp_range[1] // 2] *img_l[disp_range[0] // 2 + i - disp_range[0] // 2][disp_range[1] // 2 + j - disp_range[1] // 2]) ** 2
+    #                 # if 0 <= (r + i - (k_size * 2 + 1) // 2) < img_r.shape[0] and 0 <= (c + j - (k_size * 2 + 1) // 2) < img_r.shape[1]:
+    #                 #     # add to top this number from the equation
+    #                 #     top += (img_l[r][c] * img_r[r + i - (k_size * 2 + 1)// 2][c + j - (k_size * 2 + 1) // 2]) ** 2
+    #                 #     bottom1 += (img_r[r][c] * img_r[r + i - (k_size * 2 + 1) // 2][c + j - (k_size * 2 + 1)// 2]) ** 2
+    #                 #     bottom2 += (img_l[r][c] * img_l[r+ i -(k_size * 2 + 1) // 2][c+ j -(k_size * 2 + 1) // 2]) ** 2
+    #         # put the sum into the new image
+    #         if (bottom1 * bottom2) != 0:
+    #             new[r][c] = top / np.sqrt(bottom1 * bottom2)
+    #         else:
+    #             new[r][c] = top
+    kernel=k_size*2+1
     for r in range(img_l.shape[0]):
         for c in range(img_l.shape[1]):
-            # go over the "window" around r,c
-            top = 0
-            bottom1 = 0
-            bottom2 = 0
-            for i in range(k_size * 2 + 1):
-                for j in range(k_size * 2 + 1):
-                    # check if the values are in the other image
-                    if 0 <= (r + i - disp_range[0] // 2) < img_r.shape[0] and 0 <= (c + j - disp_range[1] // 2) < \
-                            img_r.shape[1]:
-                        # add to top this number from the equation
-                        top += (img_l[r][c] * img_r[r + i - disp_range[0] // 2][c + j - disp_range[1] // 2]) ** 2
-                        bottom1 += (img_r[r][c] * img_r[r + i - disp_range[0] // 2][c + j - disp_range[1] // 2]) ** 2
-                        bottom2 += (img_l[r][c] * img_l[r + i - disp_range[0] // 2][c + j - disp_range[1] // 2]) ** 2
-                    # if 0 <= (disp_range[0]//2+i-disp_range[0]//2) < img_l.shape[0] and 0 <= (disp_range[1]//2+j-disp_range[1]//2) < img_l.shape[1] :
-                    #     # and 0 <= disp_range[0] // 2 < img_l.shape[0] and 0 <= disp_range[1] // 2 < img_l.shape[1]
-                    #     bottom2 += (img_l[disp_range[0] // 2][disp_range[1] // 2] *img_l[disp_range[0] // 2 + i - disp_range[0] // 2][disp_range[1] // 2 + j - disp_range[1] // 2]) ** 2
-                    # if 0 <= (r + i - (k_size * 2 + 1) // 2) < img_r.shape[0] and 0 <= (c + j - (k_size * 2 + 1) // 2) < img_r.shape[1]:
-                    #     # add to top this number from the equation
-                    #     top += (img_l[r][c] * img_r[r + i - (k_size * 2 + 1)// 2][c + j - (k_size * 2 + 1) // 2]) ** 2
-                    #     bottom1 += (img_r[r][c] * img_r[r + i - (k_size * 2 + 1) // 2][c + j - (k_size * 2 + 1)// 2]) ** 2
-                    #     bottom2 += (img_l[r][c] * img_l[r+ i -(k_size * 2 + 1) // 2][c+ j -(k_size * 2 + 1) // 2]) ** 2
-            # put the sum into the new image
-            if (bottom1 * bottom2) != 0:
-                new[r][c] = top / np.sqrt(bottom1 * bottom2)
-            else:
-                new[r][c] = top
+            best_offset = 0
+            prev_ssd = float("inf")
+            for offset in range(disp_range[0], disp_range[1]):
+                ssd = 0
+                top = 0
+                bottom1=0
+                bottom2=0
+                # run over kersize
+                for v in range(kernel):
+                    for u in range(kernel):
+                        if 0 <= r + v - offset < img_r.shape[0] and 0 <= c + u - offset < img_r.shape[1]:
+                            top += ((img_l[r, c]) * (img_r[r + v - offset, c + u - offset])) ** 2
+                            bottom1 += ((img_r[r, c]) * (img_r[r + v - offset, c + u - offset])) ** 2
+                            bottom2 += ((img_l[u, v]) * (img_l[offset, offset])) ** 2
+                            if bottom1*bottom2!=0:
+                                ssd=top/np.sqrt(bottom1*bottom2)
+                            # else:
+                            #     ssd=top
+
+                if ssd < prev_ssd:
+                    prev_ssd = ssd
+                    best_offset = offset
+            new[r][c] = best_offset
+    print(new)
 
     return new
 
