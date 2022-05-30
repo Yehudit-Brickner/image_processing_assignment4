@@ -111,9 +111,9 @@ def disparityNC(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int,int), k_s
     #         else:
     #             new[r][c] = top
     # kernel=k_size*2+1
-    for r in range(img_l.shape[0]):
+    for r in range(k_size,img_l.shape[0]-k_size):
         print(r)
-        for c in range(img_l.shape[1]):
+        for c in range(k_size,img_l.shape[1]-k_size):
             best_offset = 0
             prev_ssd = float("inf")
             for offset in range(disp_range[0], disp_range[1]):
@@ -242,6 +242,9 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
 
     ##### Your Code Here ######
 
+    # make the dst points be ints
+    # dst_p=dst_p.astype(int)
+
     # find 2 smallest x take x with smallest y = top left corner
     # other is bottem left
     # other 2 points smaller y is top right
@@ -290,12 +293,17 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
     tr_src = np.array([0, src_img.shape[1]])
     br_src = np.array([src_img.shape[0], src_img.shape[1]])
     bl_src = np.array([src_img.shape[0], 0])
+
     # create the src_p array so that the corners match
     src_p = np.zeros((4, 2))
+    # works need warp
     src_p[tl, :] = bl_src
     src_p[tr, :] = br_src
     src_p[br, :] = tr_src
     src_p[bl, :] = tl_src
+
+
+
 
     # to make the mask we need to map out the shape that we stabbed
     # we will make 4 equations: TL-TR, BL-BR, TL-BL ,TR-BR
@@ -305,6 +313,7 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
     minX = min([dst_p[bl][0], dst_p[tl][0]])
     maxY = max([dst_p[br][1], dst_p[bl][1]])
     minY = min([dst_p[tr][1], dst_p[tl][1]])
+    print(maxX, maxY, minX, minY)
     TL_TR_slope, TL_TR_b = getEquation((dst_p[tl][0], dst_p[tl][1]), (dst_p[tr][0], dst_p[tr][1]))
     BL_BR_slope, BL_BR_b = getEquation((dst_p[bl][0], dst_p[bl][1]), (dst_p[br][0], dst_p[br][1]))
     TL_BL_slope, TL_BL_b = getEquation((dst_p[tl][0], dst_p[tl][1]), (dst_p[bl][0], dst_p[bl][1]))
@@ -316,25 +325,29 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
             if minX <= y <= maxX and minY <= x <= maxY:  # (opposite because of how plt plots)
                 if TL_TR_slope * y + TL_TR_b <= x <= BL_BR_slope * y + BL_BR_b:  # check if the x is in the okay range (opposite because of how plt plots- should be checking the col)
                     if TL_BL_slope != 0 and TR_BR_slope != 0:  # make sure the left and right arent parallel to the y axis
-                        if (y - TL_BL_b) / TL_BL_slope <= x <= (y - TR_BR_b) / TR_BR_slope:  # check if the y is in the okay range (opposite because of how plt plots- should be checking the row)
+                        if (x - TL_BL_b) / TL_BL_slope <= y <= (x - TR_BR_b) / TR_BR_slope:  # check if the y is in the okay range (opposite because of how plt plots- should be checking the row)
                             mask1[x][y][0] = 1
                             mask1[x][y][1] = 1
                             mask1[x][y][2] = 1
                     elif TL_BL_slope != 0 and TR_BR_slope == 0:  # if right is parallel to the y axis
-                        if x <= dst_p[br][1] and (y - TL_BL_b) / TL_BL_slope <=x:
+                        if x <= dst_p[br][1] and (x - TL_BL_b) / TL_BL_slope <= y:
                             mask1[x][y][0] = 1
                             mask1[x][y][1] = 1
                             mask1[x][y][2] = 1
+
                     elif TL_BL_slope == 0 and TR_BR_slope != 0:  # if left is parallel to the y axis
-                        if (y - TR_BR_b) / TR_BR_slope >= x and x >= dst_p[tl][0] :
+                        if (x - TR_BR_b) / TR_BR_slope >= y and x >= dst_p[tl][0] :
                             mask1[x][y][0] = 1
                             mask1[x][y][1] = 1
                             mask1[x][y][2] = 1
+
                     else:  # both are parallel to y axis
                         if dst_p[tl][0] <= x <= dst_p[tr][0]:
                             mask1[x][y][0] = 1
                             mask1[x][y][1] = 1
                             mask1[x][y][2] = 1
+
+
 
     plt.imshow(mask1)
     plt.show()
@@ -343,21 +356,16 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
     # get the homgraphy of teh images
     hom, e = computeHomography(src_p, dst_p)
     theta = 1.5708
-    # turn = np.array([[np.cos(theta), -np.sin(theta), (dst_img.shape[0] * 3 // 4)],
-    #                  [np.sin(theta), np.cos(theta), 0],
-    #                  [0, 0, 1]], dtype=np.float)
-    # hom = hom @ turn
-    # print(hom)
-    # hom1 , e1= cv2.findHomography(src_p.astype(float), dst_p.astype(float))
-    # print(hom1)
-    # warp the image
-
+    turn = np.array([[np.cos(theta), -np.sin(theta), (dst_img.shape[1]//2)-35],
+                     [np.sin(theta), np.cos(theta), 0],
+                     [0, 0, 1]], dtype=np.float)
+    hom = hom @ turn
     src_out = cv2.warpPerspective(src_img, hom, (dst_img.shape[1], dst_img.shape[0]))
 
     plt.imshow(src_out)
     plt.show()
-    plt.imshow(mask1 -src_out)
-    plt.show()
+    # plt.imshow(mask1 -src_out)
+    # plt.show()
     # connect the images
     out = dst_img * (1 - mask1) + src_out * (mask1)
     plt.imshow(out)
