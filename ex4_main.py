@@ -7,12 +7,11 @@ import time
 
 def displayDepthImage(l_img, r_img, disparity_range=(0, 5), method=disparitySSD):
 
-    p_size = 9
+    p_size = 5
     st = time.time()
     d_ssd = method(l_img, r_img, disparity_range, p_size)
     print("Time: {:.3f} sec".format(time.time() - st))
     plt.matshow(d_ssd)
-    # plt.imshow(d_ssd)
     plt.colorbar()
     plt.show()
 
@@ -29,7 +28,7 @@ def main():
     # L=cv2.imread('input/pair1-L.png',0)/255.0
     # R=cv2.imread('input/pair1-R.png',0)/255.0
     # # Display depth SSD
-    # displayDepthImage(L, R, (10,80), method=disparitySSD)
+    displayDepthImage(L, R, (10,80), method=disparitySSD)
 
     # Display depth NC
     displayDepthImage(L, R, (10,80), method=disparityNC)

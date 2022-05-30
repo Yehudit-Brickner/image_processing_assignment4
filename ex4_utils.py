@@ -146,12 +146,15 @@ def getEquation(p1, p2):
     top = int(p1[1]) - int(p2[1])  # y1-y2
     bottom = int(p1[0]) - int(p2[0])  # x1-x2
     if bottom != 0:
+        #slope
         slope = top / bottom
+        # b
         b = -slope * int(p1[0]) + int(p1[1])
-        print("y=", slope, "x ", b)
+        # print("y=", slope, "x ", b)
         return slope, b
     else:
-        print("line is parallel to y")
+        #line is parallel to y
+        # print("line is parallel to y")
         return 0, 0
 
 
@@ -196,6 +199,8 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
     # other 2 points smaller y is top right
     # last is bottom right
 
+    # MATCH THE STABBED POINTS TO TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT
+
     # we will find the  small x values, in dst_p
     minx1 = float("inf")
     minx2 = float("inf")
@@ -209,7 +214,7 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
         if minx1 <= dst_p[row][0] <= minx2 and row != minxrow1:
             minx2 = dst_p[row][0]
             minxrow2 = row
-    # we will the smaller y value
+    # we will find the smaller y value
     # and get the topleft and bottomleft corners
     if (dst_p[minxrow1][1] < dst_p[minxrow2][1]):
         tl = minxrow1
@@ -242,7 +247,7 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
 
     # create the src_p array so that the corners match
     src_p = np.zeros((4, 2))
-    # works need warp
+    # match up the corners- looks off but this is because hoe cv2 plots the image
     src_p[tl, :] = bl_src
     src_p[tr, :] = br_src
     src_p[br, :] = tr_src
@@ -293,25 +298,22 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
                             mask1[x][y][1] = 1
                             mask1[x][y][2] = 1
 
-
-
-    plt.imshow(mask1)
-    plt.show()
-
-
-    # get the homgraphy of teh images
+    # get the homgraphy of the images
     hom, e = computeHomography(src_p, dst_p)
     theta = 1.5708
+    # rotate the homagraph and shift so that the image is in the correct spot
     turn = np.array([[np.cos(theta), -np.sin(theta), (dst_img.shape[1]//2)-35],
                      [np.sin(theta), np.cos(theta), 0],
                      [0, 0, 1]], dtype=np.float)
     hom = hom @ turn
+    # warp the image
     src_out = cv2.warpPerspective(src_img, hom, (dst_img.shape[1], dst_img.shape[0]))
 
-    plt.imshow(src_out)
-    plt.show()
+    # plt.imshow(src_out)
+    # plt.show()
     # plt.imshow(mask1 -src_out)
     # plt.show()
+
     # connect the images
     out = dst_img * (1 - mask1) + src_out * (mask1)
     plt.imshow(out)
