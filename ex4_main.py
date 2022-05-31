@@ -21,12 +21,12 @@ def main():
     print("ID:", 328601018)
 
     # Read images
-    i =2
+    i =1
     L = cv2.imread(os.path.join('input', 'pair%d-L.png' % i), 0) / 255.0
     R = cv2.imread(os.path.join('input', 'pair%d-R.png' % i), 0) / 255.0
 
     # Display depth SSD
-    displayDepthImage(L, R, (10,80), method=disparitySSD)
+    # displayDepthImage(L, R, (10,80), method=disparitySSD)
 
     # Display depth NC
     displayDepthImage(L, R, (10,80), method=disparityNC)
