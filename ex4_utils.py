@@ -19,17 +19,19 @@ def disparitySSD(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int, int), k
     #make a padded image
     img_l_pad=cv2.copyMakeBorder(img_l,k_size+disp_range[1],k_size+disp_range[1],k_size+disp_range[1],k_size+disp_range[1],cv2.BORDER_REFLECT_101)
     img_r_pad=cv2.copyMakeBorder(img_r,k_size+disp_range[1],k_size+disp_range[1],k_size+disp_range[1],k_size+disp_range[1],cv2.BORDER_REFLECT_101)
-
-
+    if disp_range[1]-disp_range[0]<20:
+        disp=np.arange(int(disp_range[0]), int(disp_range[1]))
+    else:
+        disp = np.arange(int(disp_range[0]), int(disp_range[1]),5)
     # go over the image
-    for r in range(img_l.shape[0]):
-        for c in range(img_l.shape[1]):
+    for r in range(0,img_l.shape[0],2):
+        for c in range(0,img_l.shape[1],2):
             r1=r+k_size+disp_range[1]
             c1=c+k_size+disp_range[1]
             best_offset =0
             prev_ssd = float("inf")
             # go over the offset
-            for offset in range(disp_range[0], disp_range[1]):
+            for offset in disp:
                 ssd = 0
                 if r1 - k_size >= 0 and r1 + k_size + 1 < img_l_pad.shape[0] and c1 - k_size >= 0 and c1 + k_size + 1 < img_l_pad.shape[1]:  # check that we are in range in the left image
                     if r1 - k_size >= 0 and r1 + k_size + 1 < img_r_pad.shape[0] and c1 - k_size - offset >= 0 and c1 + k_size - offset + 1 < img_r_pad.shape[1]:  # check that we are in range in the right image
@@ -40,12 +42,12 @@ def disparitySSD(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int, int), k
                     best_offset = offset
             # put in the value in the new image
             new[r][c] = best_offset
-            # if (r+1 < img_l.shape[0]):
-            #     new[r+1][c] = best_offset
-            # if c+1<=img_l.shape[1]:
-            #     new[r ][c+1] = best_offset
-            # if r+1 <img_l.shape[0] and c+1 <img_l.shape[1]:
-            #     new[r+1][c + 1] = best_offset
+            if (r+1 < img_l.shape[0]):
+                new[r+1][c] = best_offset
+            if c+1<img_l.shape[1]:
+                new[r ][c+1] = best_offset
+            if r+1 <img_l.shape[0] and c+1 <img_l.shape[1]:
+                new[r+1][c + 1] = best_offset
     return new
 
 
@@ -64,6 +66,11 @@ def disparityNC(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int,int), k_s
     img_l_pad = cv2.copyMakeBorder(img_l, k_size + disp_range[1], k_size + disp_range[1], k_size + disp_range[1],k_size + disp_range[1], cv2.BORDER_REFLECT_101)
     img_r_pad = cv2.copyMakeBorder(img_r, k_size + disp_range[1], k_size + disp_range[1], k_size + disp_range[1],k_size + disp_range[1], cv2.BORDER_REFLECT_101)
 
+    if disp_range[1]-disp_range[0]<20:
+        disp=np.arange(int(disp_range[0]), int(disp_range[1]))
+    else:
+        disp = np.arange(int(disp_range[0]), int(disp_range[1]),5)
+
     # go over the image
     for r in range(0,img_l.shape[0],2):
         for c in range(0,img_l.shape[1],2):
@@ -72,7 +79,7 @@ def disparityNC(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int,int), k_s
             best_offset = 0
             prev_ssd = 0
             # go over the offset
-            for offset in range(disp_range[0], disp_range[1]):
+            for offset in disp:
                 ssd = 0
                 if r1 - k_size >= 0 and r1 + k_size < img_l_pad.shape[0] and c1 - k_size >= 0 and c1 + k_size < img_l_pad.shape[1]:  # check that we are in range
                     if r1 - k_size >= 0 and r1 + k_size < img_r_pad.shape[0] and c1 - k_size - offset >= 0 and c1 + k_size - offset < img_r_pad.shape[1]: # check that we are in range
@@ -93,9 +100,9 @@ def disparityNC(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int,int), k_s
             new[r][c] = best_offset
             if (r+1 < img_l.shape[0]):
                 new[r+1][c] = best_offset
-            if c+1<=img_l.shape[1]:
+            if c+1< img_l.shape[1]:
                 new[r ][c+1] = best_offset
-            if r+1 <img_l.shape[0] and c+1 <img_l.shape[1]:
+            if r+1 < img_l.shape[0] and c+1 <img_l.shape[1]:
                 new[r+1][c + 1] = best_offset
     # print(new)
 
