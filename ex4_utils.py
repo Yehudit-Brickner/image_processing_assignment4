@@ -65,36 +65,38 @@ def disparityNC(img_l: np.ndarray, img_r: np.ndarray, disp_range: (int,int), k_s
     img_r_pad = cv2.copyMakeBorder(img_r, k_size + disp_range[1], k_size + disp_range[1], k_size + disp_range[1],k_size + disp_range[1], cv2.BORDER_REFLECT_101)
 
     # go over the image
-    for r in range(img_l.shape[0]):
-        for c in range(img_l.shape[1]):
+    for r in range(0,img_l.shape[0],2):
+        for c in range(0,img_l.shape[1],2):
             r1 = r + k_size + disp_range[1]
             c1 = c + k_size + disp_range[1]
             best_offset = 0
-            prev_ssd = float("inf")
+            prev_ssd = 0
             # go over the offset
             for offset in range(disp_range[0], disp_range[1]):
                 ssd = 0
                 if r1 - k_size >= 0 and r1 + k_size < img_l_pad.shape[0] and c1 - k_size >= 0 and c1 + k_size < img_l_pad.shape[1]:  # check that we are in range
                     if r1 - k_size >= 0 and r1 + k_size < img_r_pad.shape[0] and c1 - k_size - offset >= 0 and c1 + k_size - offset < img_r_pad.shape[1]: # check that we are in range
-                        top = np.sum((img_l_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size:c1 + k_size + 1] - img_r_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size - offset:c1 + k_size - offset + 1]) ** 2)
-                        bottom1 = np.sum((img_l_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size:c1 + k_size + 1] - img_l_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size :c1 + k_size + 1]) ** 2)
-                        bottom2 = np.sum((img_r_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size- offset:c1 + k_size + 1- offset] - img_r_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size - offset:c1 + k_size - offset + 1]) ** 2)
+                        top = np.sum((img_l_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size:c1 + k_size + 1]* img_r_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size - offset:c1 + k_size - offset + 1]))
+                        bottom1 = np.sum((img_l_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size:c1 + k_size + 1] * img_l_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size :c1 + k_size + 1]))
+                        bottom2 = np.sum((img_r_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size- offset:c1 + k_size + 1- offset] * img_r_pad[r1 - k_size:r1 + k_size + 1, c1 - k_size - offset:c1 + k_size - offset + 1]))
                         if bottom1*bottom2!=0: # make sure im not dividing by zero
                             ssd=top/np.sqrt(bottom1*bottom2)
                         else:
-                            ssd=top
+                            print("zero")
+                            # ssd=top
+                            ssd=0
                 # check if smaller then prev
-                if ssd < prev_ssd:
+                if ssd >= prev_ssd:
                     prev_ssd = ssd
                     best_offset = offset
             # put in the value in the new image
             new[r][c] = best_offset
-            # if (r+1 < img_l.shape[0]):
-            #     new[r+1][c] = best_offset
-            # if c+1<=img_l.shape[1]:
-            #     new[r ][c+1] = best_offset
-            # if r+1 <img_l.shape[0] and c+1 <img_l.shape[1]:
-            #     new[r+1][c + 1] = best_offset
+            if (r+1 < img_l.shape[0]):
+                new[r+1][c] = best_offset
+            if c+1<=img_l.shape[1]:
+                new[r ][c+1] = best_offset
+            if r+1 <img_l.shape[0] and c+1 <img_l.shape[1]:
+                new[r+1][c + 1] = best_offset
     # print(new)
 
     return new
