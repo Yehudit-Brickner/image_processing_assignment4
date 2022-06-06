@@ -201,14 +201,30 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
     dst_p = np.array(dst_p)
 
     ##### Your Code Here ######
+    # pick 4 points in the src image
+    src1_p=[]
+    fig2 = plt.figure()
+    def onclick_2(event):
+        x = event.xdata
+        y = event.ydata
+        print("Loc: {:.0f},{:.0f}".format(x, y))
+
+        plt.plot(x, y, '*r')
+        src1_p.append([x, y])
+
+        if len(src1_p) == 4:
+            plt.close()
+        plt.show()
+
+    # display image 2
+    cid2 = fig2.canvas.mpl_connect('button_press_event', onclick_2)
+    plt.imshow(src_img)
+    plt.show()
+    src1_p = np.array(src1_p)
 
 
-    # find 2 smallest x take x with smallest y = top left corner
-    # other is bottem left
-    # other 2 points smaller y is top right
-    # last is bottom right
 
-    # MATCH THE STABBED POINTS TO TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT
+    # MATCH THE STABBED POINTS TO TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT IN DST IMAGE
 
     # we will find the  small x values, in dst_p
     minx1 = float("inf")
@@ -245,24 +261,51 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
         tr = lst[0]
         br = lst[1]
 
-    # print("read clockwise\n", "topleft", tl, dst_p[tl, :], "topright", tr, dst_p[tr, :], "bottomright", br,
-    #       dst_p[br, :], "bpttomleft", bl, dst_p[bl, :])
-
-    # corners of the src_img
-    tl_src = np.array([0, 0])
-    tr_src = np.array([0, src_img.shape[1]])
-    br_src = np.array([src_img.shape[0], src_img.shape[1]])
-    bl_src = np.array([src_img.shape[0], 0])
-
-    # create the src_p array so that the corners match
-    src_p = np.zeros((4, 2))
-    # match up the corners- looks off but this is because hoe cv2 plots the image
-    src_p[tl, :] = bl_src
-    src_p[tr, :] = br_src
-    src_p[br, :] = tr_src
-    src_p[bl, :] = tl_src
 
 
+    # MATCH THE STABBED POINTS TO TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT IN SRC IMAGE
+
+    # we will find the  small x values, in src1_p
+    minx1_src = float("inf")
+    minx2_src = float("inf")
+    minxrow1_src = -1
+    minxrow2_src = -1
+    for row in range(len(src1_p)):
+        if src1_p[row][0] <= minx1_src:
+            minx1_src = src1_p[row][0]
+            minxrow1_src = row
+    for row in range(len(src1_p)):
+        if minx1_src <= src1_p[row][0] <= minx2_src and row != minxrow1_src:
+            minx2_src = src1_p[row][0]
+            minxrow2_src = row
+    # we will find the smaller y value
+    # and get the topleft and bottomleft corners
+    if (src1_p[minxrow1_src][1] < src1_p[minxrow2_src][1]):
+        tl_src = minxrow1_src
+        bl_src = minxrow2_src
+    else:
+        tl_src = minxrow2_src
+        bl_src = minxrow1_src
+
+    # we will find the 2 point that arent topleft and bottomleft
+    # and find the bigger y value
+    # and get the topright and bottomright
+    lst = [0, 1, 2, 3]
+    lst.remove(tl_src)
+    lst.remove(bl_src)
+    if src1_p[lst[0]][1] > src1_p[lst[1]][1]:
+        tr_src = lst[1]
+        br_src = lst[0]
+    else:
+        tr_src = lst[0]
+        br_src = lst[1]
+
+    # we will make a new src_p and make sure that the corners are aligned
+    src_p = np.zeros_like(src1_p)
+    src_p[tl, :] = src1_p[tl_src, :]
+    src_p[tr, :] = src1_p[tr_src, :]
+    src_p[br, :] = src1_p[br_src, :]
+    src_p[bl, :] = src1_p[bl_src, :]
 
 
     # to make the mask we need to map out the shape that we stabbed
@@ -309,19 +352,10 @@ def warpImag(src_img: np.ndarray, dst_img: np.ndarray) -> None:
 
     # get the homgraphy of the images
     hom, e = computeHomography(src_p, dst_p)
-    theta = 1.5708
-    # rotate the homagraph and shift so that the image is in the correct spot
-    turn = np.array([[np.cos(theta), -np.sin(theta), (dst_img.shape[1]//2)-35],
-                     [np.sin(theta), np.cos(theta), 0],
-                     [0, 0, 1]], dtype=np.float)
-    hom = hom @ turn
+
     # warp the image
     src_out = cv2.warpPerspective(src_img, hom, (dst_img.shape[1], dst_img.shape[0]))
 
-    # plt.imshow(src_out)
-    # plt.show()
-    # plt.imshow(mask1 -src_out)
-    # plt.show()
 
     # connect the images
     out = dst_img * (1 - mask1) + src_out * (mask1)
